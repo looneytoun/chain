@@ -12,6 +12,7 @@ import (
 // TODO(bobg): Review serialization/deserialization logic for
 // assetVersions other than 1.
 
+// TxOutput is a transaction output.
 type TxOutput struct {
 	AssetVersion uint64
 	OutputCommitment

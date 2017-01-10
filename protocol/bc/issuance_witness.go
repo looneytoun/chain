@@ -9,6 +9,8 @@ import (
 	"chain/errors"
 )
 
+// Type IssuanceWitness contains the witness data for an issuance
+// input.
 type IssuanceWitness struct {
 	InitialBlock    Hash
 	AssetDefinition []byte
@@ -17,62 +19,60 @@ type IssuanceWitness struct {
 	Arguments       [][]byte
 }
 
-func (iw *IssuanceWitness) AssetID() AssetID {
-	return ComputeAssetID(iw.IssuanceProgram, iw.InitialBlock, iw.VMVersion, iw.AssetDefinitionHash())
+func (aw *IssuanceWitness) AssetID() AssetID {
+	return ComputeAssetID(aw.IssuanceProgram, aw.InitialBlock, aw.VMVersion, EmptyStringHash)
 }
 
-func (iw *IssuanceWitness) AssetDefinitionHash() (defhash Hash) {
-	if len(iw.AssetDefinition) == 0 {
-		return EmptyStringHash
-	}
-	sha := sha3pool.Get256()
-	defer sha3pool.Put256(sha)
-	sha.Write(iw.AssetDefinition)
-	sha.Read(defhash[:])
-	return
-}
-
-func (iw *IssuanceWitness) writeTo(w io.Writer) error {
-	_, err := w.Write(iw.InitialBlock[:])
+func (aw *IssuanceWitness) writeTo(w io.Writer) error {
+	_, err := w.Write(aw.InitialBlock[:])
 	if err != nil {
 		return err
 	}
-	_, err = blockchain.WriteVarstr31(w, iw.AssetDefinition)
+	_, err = blockchain.WriteVarstr31(w, aw.AssetDefinition)
 	if err != nil {
 		return err
 	}
-	_, err = blockchain.WriteVarint63(w, iw.VMVersion)
+	_, err = blockchain.WriteVarint63(w, aw.VMVersion)
 	if err != nil {
 		return err
 	}
-	_, err = blockchain.WriteVarstr31(w, iw.IssuanceProgram)
+	_, err = blockchain.WriteVarstr31(w, aw.IssuanceProgram)
 	if err != nil {
 		return err
 	}
-	_, err = blockchain.WriteVarstrList(w, iw.Arguments)
+	_, err = blockchain.WriteVarstrList(w, aw.Arguments)
 	return err
 }
 
-func (iw *IssuanceWitness) readFrom(r io.Reader, assetVersion uint64) error {
-	_, err := io.ReadFull(r, iw.InitialBlock[:])
+func (aw *IssuanceWitness) readFrom(r io.Reader, assetVersion uint64) error {
+	_, err := io.ReadFull(r, aw.InitialBlock[:])
 	if err != nil {
 		return errors.Wrap(err, "reading initial block hash")
 	}
-	iw.AssetDefinition, _, err = blockchain.ReadVarstr31(r)
+	aw.AssetDefinition, _, err = blockchain.ReadVarstr31(r)
 	if err != nil {
 		return errors.Wrap(err, "reading asset definition")
 	}
-	iw.VMVersion, _, err = blockchain.ReadVarint63(r)
+
+	aw.VMVersion, _, err = blockchain.ReadVarint63(r)
 	if err != nil {
 		return errors.Wrap(err, "reading VM version")
 	}
-	if (assetVersion == 1 || assetVersion == 2) && iw.VMVersion != 1 {
-		return fmt.Errorf("unrecognized VM version %d for asset version %d", iw.VMVersion, assetVersion)
+	if (assetVersion == 1 || assetVersion == 2) && aw.VMVersion != 1 {
+		return fmt.Errorf("unrecognized VM version %d for asset version %d", aw.VMVersion, assetVersion)
 	}
-	iw.IssuanceProgram, _, err = blockchain.ReadVarstr31(r)
+	aw.IssuanceProgram, _, err = blockchain.ReadVarstr31(r)
 	if err != nil {
 		return errors.Wrap(err, "reading issuance program")
 	}
-	iw.Arguments, _, err = blockchain.ReadVarstrList(r)
+	aw.Arguments, _, err = blockchain.ReadVarstrList(r)
 	return errors.Wrap(err, "reading arguments")
+}
+
+func (aw *IssuanceWitness) AssetDefinitionHash() (defhash Hash) {
+	sha := sha3pool.Get256()
+	defer sha3pool.Put256(sha)
+	sha.Write(aw.AssetDefinition)
+	sha.Read(defhash[:])
+	return defhash
 }

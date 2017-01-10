@@ -10,12 +10,16 @@ import (
 )
 
 type (
+	// TxInput is a transaction input. It contains fields common to all
+	// types of input, plus type-specific data satisfying the TypedInput
+	// interface.
 	TxInput struct {
 		AssetVersion  uint64
 		ReferenceData []byte
 		TypedInput
 	}
 
+	// TypedInput is the type-specific part of a transaction input.
 	TypedInput interface {
 		IsIssuance() bool
 		readWitness(r io.Reader, assetVersion uint64) error

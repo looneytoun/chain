@@ -7,6 +7,8 @@ import (
 	"chain/errors"
 )
 
+// IssuanceInput satisfies the TypedInput interface and represents an
+// asset issuance.
 type IssuanceInput struct {
 	// Commitment
 	Nonce  []byte
