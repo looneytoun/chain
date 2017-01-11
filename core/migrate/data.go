@@ -96,4 +96,7 @@ var migrations = []migration{
 		ALTER TABLE assets ALTER COLUMN initial_block_hash SET DATA TYPE bytea USING decode(initial_block_hash, 'hex');
 		ALTER TABLE config ALTER COLUMN blockchain_id SET DATA TYPE bytea USING decode(blockchain_id, 'hex');
 	`},
+	{Name: "2017-01-11.1.txdb.snapshots-timestamp.sql", SQL: `
+		ALTER TABLE snapshots ADD COLUMN timestamp timestamp without time zone DEFAULT now();
+	`},
 }
