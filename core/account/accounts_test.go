@@ -5,6 +5,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
@@ -78,7 +79,7 @@ func TestCreateControlProgram(t *testing.T) {
 		testutil.FatalErr(t, err)
 	}
 
-	got, err := m.CreateControlProgram(ctx, account.ID, false)
+	got, err := m.CreateControlProgram(ctx, account.ID, false, time.Now().Add(5*time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
@@ -108,7 +109,7 @@ func (m *Manager) createTestControlProgram(ctx context.Context, t testing.TB, ac
 		accountID = account.ID
 	}
 
-	acp, err := m.CreateControlProgram(ctx, accountID, false)
+	acp, err := m.CreateControlProgram(ctx, accountID, false, time.Now().Add(5*time.Minute))
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}

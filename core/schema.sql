@@ -178,7 +178,8 @@ CREATE TABLE account_control_programs (
     signer_id text NOT NULL,
     key_index bigint NOT NULL,
     control_program bytea NOT NULL,
-    change boolean NOT NULL
+    change boolean NOT NULL,
+    expiry timestamp without time zone NOT NULL
 );
 
 
@@ -879,3 +880,4 @@ insert into migrations (filename, hash) values ('2016-11-28.0.core.submitted-txs
 insert into migrations (filename, hash) values ('2017-01-05.0.core.rename_block_key.sql', 'ba6a62e498236ec9d2f13238a945829a5cab83f897068fef57a2c152a2e36037');
 insert into migrations (filename, hash) values ('2017-01-10.0.signers.xpubs-type.sql', '4a4d6c736a2bf65e69abbdc87771faa1dc17a0106b2651a6a58af067708d095a');
 insert into migrations (filename, hash) values ('2017-01-11.0.core.hash-bytea.sql', '9f7f15df3479c38f193884a2d3cb7ae8001ed08607f9cc661fd5c420e248688d');
+insert into migrations (filename, hash) values ('2017-01-12.0.account.cp-expiry.sql', '6b57871e4ab8ee77ffc3d884da899baa18f7e9935e0d174d061eaed1a1cec2b2');

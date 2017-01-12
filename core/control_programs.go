@@ -4,12 +4,15 @@ import (
 	"context"
 	stdjson "encoding/json"
 	"sync"
+	"time"
 
 	"chain/encoding/json"
 	"chain/errors"
 	"chain/net/http/httpjson"
 	"chain/net/http/reqid"
 )
+
+const defaultControlProgramExpiry = 30 * 24 * time.Hour
 
 // POST /create-control-program
 func (h *Handler) createControlProgram(ctx context.Context, ins []struct {
@@ -51,8 +54,9 @@ func (h *Handler) createControlProgram(ctx context.Context, ins []struct {
 
 func (h *Handler) createAccountControlProgram(ctx context.Context, input []byte) (interface{}, error) {
 	var parsed struct {
-		AccountAlias string `json:"account_alias"`
-		AccountID    string `json:"account_id"`
+		AccountAlias string    `json:"account_alias"`
+		AccountID    string    `json:"account_id"`
+		Expiry       time.Time `json:"expiry,omitempty"`
 	}
 	err := stdjson.Unmarshal(input, &parsed)
 	if err != nil {
@@ -68,7 +72,12 @@ func (h *Handler) createAccountControlProgram(ctx context.Context, input []byte)
 		accountID = acc.ID
 	}
 
-	controlProgram, err := h.Accounts.CreateControlProgram(ctx, accountID, false)
+	expiry := parsed.Expiry
+	if expiry.IsZero() {
+		expiry = time.Now().Add(defaultControlProgramExpiry)
+	}
+
+	controlProgram, err := h.Accounts.CreateControlProgram(ctx, accountID, false, expiry)
 	if err != nil {
 		return nil, err
 	}
