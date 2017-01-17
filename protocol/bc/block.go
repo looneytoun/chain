@@ -152,9 +152,17 @@ type BlockHeader struct {
 	// ConsensusProgram is the predicate for validating the next block.
 	ConsensusProgram []byte
 
+	// Any unrecognized suffix of the block-commitment extensible string
+	// gets preserved here.
+	CommitmentSuffix []byte
+
 	// Witness is a vector of arguments to the previous block's
 	// ConsensusProgram for validating this block.
 	Witness [][]byte
+
+	// Any unrecognized suffix of the block-witness extensible string
+	// gets preserved here.
+	WitnessSuffix []byte
 }
 
 // Time returns the time represented by the Timestamp in bh.
@@ -234,7 +242,7 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 		return 0, err
 	}
 
-	_, err = blockchain.ReadExtensibleString(r, true, func(r io.Reader) error {
+	bh.CommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, true, func(r io.Reader) error {
 		_, err := io.ReadFull(r, bh.TransactionsMerkleRoot[:])
 		if err != nil {
 			return err
@@ -254,7 +262,7 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 	}
 
 	if serflags[0]&SerBlockWitness == SerBlockWitness {
-		_, err = blockchain.ReadExtensibleString(r, true, func(r io.Reader) (err error) {
+		bh.WitnessSuffix, _, err = blockchain.ReadExtensibleString(r, true, func(r io.Reader) (err error) {
 			bh.Witness, _, err = blockchain.ReadVarstrList(r)
 			return err
 		})
@@ -302,7 +310,7 @@ func (bh *BlockHeader) writeTo(w io.Writer, serflags uint8) error {
 		return err
 	}
 
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+	_, err = blockchain.WriteExtensibleString(w, bh.CommitmentSuffix, func(w io.Writer) error {
 		_, err := w.Write(bh.TransactionsMerkleRoot[:])
 		if err != nil {
 			return err
@@ -319,7 +327,7 @@ func (bh *BlockHeader) writeTo(w io.Writer, serflags uint8) error {
 	}
 
 	if serflags&SerBlockWitness == SerBlockWitness {
-		_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+		_, err = blockchain.WriteExtensibleString(w, bh.WitnessSuffix, func(w io.Writer) error {
 			_, err := blockchain.WriteVarstrList(w, bh.Witness)
 			return err
 		})

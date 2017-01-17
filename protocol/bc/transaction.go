@@ -59,12 +59,14 @@ const (
 // Most users will want to use Tx instead;
 // it includes the hash.
 type TxData struct {
-	Version       uint64
-	Inputs        []*TxInput
-	Outputs       []*TxOutput
-	MinTime       uint64
-	MaxTime       uint64
-	ReferenceData []byte
+	Version             uint64
+	Inputs              []*TxInput
+	Outputs             []*TxOutput
+	MinTime             uint64
+	MaxTime             uint64
+	CommonFieldsSuffix  []byte
+	CommonWitnessSuffix []byte
+	ReferenceData       []byte
 }
 
 // Outpoint defines a bitcoin data type that is used to track previous
@@ -127,7 +129,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 
 	// Common fields
 	all := tx.Version == 1
-	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+	tx.CommonFieldsSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		tx.MinTime, _, err = blockchain.ReadVarint63(r)
 		if err != nil {
 			return errors.Wrap(err, "reading transaction mintime")
@@ -140,7 +142,9 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	}
 
 	// Common witness, empty in v1
-	_, _, err = blockchain.ReadVarstr31(r)
+	tx.CommonWitnessSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
+		return nil
+	})
 	if err != nil {
 		return errors.Wrap(err, "reading transaction common witness")
 	}
@@ -317,7 +321,7 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) {
 	blockchain.WriteVarint63(w, tx.Version) // TODO(bobg): check and return error
 
 	// common fields
-	blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+	blockchain.WriteExtensibleString(w, tx.CommonFieldsSuffix, func(w io.Writer) error {
 		_, err := blockchain.WriteVarint63(w, tx.MinTime)
 		if err != nil {
 			return err
@@ -327,7 +331,9 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) {
 	})
 
 	// common witness, empty in v1
-	blockchain.WriteVarstr31(w, []byte{})
+	blockchain.WriteExtensibleString(w, tx.CommonWitnessSuffix, func(w io.Writer) error {
+		return nil
+	})
 
 	blockchain.WriteVarint31(w, uint64(len(tx.Inputs))) // TODO(bobg): check and return error
 	for _, ti := range tx.Inputs {
