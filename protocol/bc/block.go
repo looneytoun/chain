@@ -242,7 +242,7 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 		return 0, err
 	}
 
-	bh.CommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, true, func(r io.Reader) error {
+	bh.CommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		_, err := io.ReadFull(r, bh.TransactionsMerkleRoot[:])
 		if err != nil {
 			return err
@@ -262,7 +262,7 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 	}
 
 	if serflags[0]&SerBlockWitness == SerBlockWitness {
-		bh.WitnessSuffix, _, err = blockchain.ReadExtensibleString(r, true, func(r io.Reader) (err error) {
+		bh.WitnessSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) (err error) {
 			bh.Witness, _, err = blockchain.ReadVarstrList(r)
 			return err
 		})

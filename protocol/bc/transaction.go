@@ -128,7 +128,6 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	}
 
 	// Common fields
-	all := tx.Version == 1
 	tx.CommonFieldsSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		tx.MinTime, _, err = blockchain.ReadVarint63(r)
 		if err != nil {

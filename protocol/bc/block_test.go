@@ -14,8 +14,8 @@ import (
 func TestMarshalBlock(t *testing.T) {
 	b := &Block{
 		BlockHeader: BlockHeader{
-			Version: 1,
-			Height:  1,
+			Version:          1,
+			Height:           1,
 		},
 
 		Transactions: []*Tx{

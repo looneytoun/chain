@@ -17,6 +17,9 @@ type (
 		AssetVersion uint64
 		OutputCommitment
 		ReferenceData []byte
+
+		CommitmentSuffix []byte
+		WitnessSuffix []byte
 	}
 
 	OutputCommitment struct {
@@ -48,7 +51,7 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 		return errors.Wrap(err, "reading asset version")
 	}
 
-	_, err = to.OutputCommitment.readFrom(r, txVersion, to.AssetVersion)
+	to.CommitmentSuffix, _, err = to.OutputCommitment.readFrom(r, txVersion, to.AssetVersion)
 	if err != nil {
 		return errors.Wrap(err, "reading output commitment")
 	}
@@ -64,12 +67,11 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	return errors.Wrap(err, "reading output witness")
 }
 
-func (oc *OutputCommitment) readFrom(r io.Reader, txVersion, assetVersion uint64) (n int, err error) {
+func (oc *OutputCommitment) readFrom(r io.Reader, txVersion, assetVersion uint64) (suffix []byte, n int, err error) {
 	if assetVersion != 1 {
-		return n, fmt.Errorf("unrecognized asset version %d", assetVersion)
+		return nil, n, fmt.Errorf("unrecognized asset version %d", assetVersion)
 	}
-	all := txVersion == 1
-	return blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+	return blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		_, err := oc.AssetAmount.readFrom(r)
 		if err != nil {
 			return errors.Wrap(err, "reading asset+amount")
