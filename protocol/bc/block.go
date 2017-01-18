@@ -137,8 +137,14 @@ type BlockHeader struct {
 	// to the time in the previous block.
 	TimestampMS uint64
 
-	// The next three fields constitute the block's "commitment."
+	BlockCommitment
+	CommitmentSuffix []byte
 
+	BlockWitness
+	WitnessSuffix []byte
+}
+
+type BlockCommitment struct {
 	// TransactionsMerkleRoot is the root hash of the Merkle binary hash
 	// tree formed by the transaction witness hashes of all transactions
 	// included in the block.
@@ -151,7 +157,9 @@ type BlockHeader struct {
 
 	// ConsensusProgram is the predicate for validating the next block.
 	ConsensusProgram []byte
+}
 
+type BlockWitness struct {
 	// Witness is a vector of arguments to the previous block's
 	// ConsensusProgram for validating this block.
 	Witness [][]byte
@@ -302,27 +310,13 @@ func (bh *BlockHeader) writeTo(w io.Writer, serflags uint8) error {
 		return err
 	}
 
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-		_, err := w.Write(bh.TransactionsMerkleRoot[:])
-		if err != nil {
-			return err
-		}
-		_, err = w.Write(bh.AssetsMerkleRoot[:])
-		if err != nil {
-			return err
-		}
-		_, err = blockchain.WriteVarstr31(w, bh.ConsensusProgram)
-		return err
-	})
+	bh.CommitmentSuffix, _, err = blockchain.WriteExtensibleString(w, bh.BlockCommitment.writeTo)
 	if err != nil {
 		return err
 	}
 
 	if serflags&SerBlockWitness == SerBlockWitness {
-		_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-			_, err := blockchain.WriteVarstrList(w, bh.Witness)
-			return err
-		})
+		_, err = blockchain.WriteExtensibleString(w, bh.BlockWitness.writeTo)
 		if err != nil {
 			return err
 		}
