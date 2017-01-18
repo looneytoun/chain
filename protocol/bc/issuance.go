@@ -3,6 +3,7 @@ package bc
 import (
 	"io"
 
+	"chain/crypto/sha3pool"
 	"chain/encoding/blockchain"
 	"chain/errors"
 )
