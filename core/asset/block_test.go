@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"chain/core/query"
 	"chain/crypto/ed25519"
 	"chain/crypto/ed25519/chainkd"
 	"chain/database/pg/pgtest"
@@ -17,10 +18,10 @@ const rawdef = `{
   "currency": "USD"
 }`
 
-type fakeSaver func(context.Context, bc.AssetID, map[string]interface{}, string) error
+type fakeSaver func(context.Context, *query.AnnotatedAsset, string) error
 
-func (f fakeSaver) SaveAnnotatedAsset(ctx context.Context, assetID bc.AssetID, obj map[string]interface{}, sortID string) error {
-	return f(ctx, assetID, obj, sortID)
+func (f fakeSaver) SaveAnnotatedAsset(ctx context.Context, aa *query.AnnotatedAsset, sortID string) error {
+	return f(ctx, aa, sortID)
 }
 
 func TestIndexNonLocalAssets(t *testing.T) {
@@ -79,8 +80,10 @@ func TestIndexNonLocalAssets(t *testing.T) {
 	remoteAssetID := b.Transactions[0].Inputs[0].AssetID()
 
 	var assetsSaved []bc.AssetID
-	r.indexer = fakeSaver(func(ctx context.Context, assetID bc.AssetID, obj map[string]interface{}, sortID string) error {
-		assetsSaved = append(assetsSaved, assetID)
+	r.indexer = fakeSaver(func(ctx context.Context, aa *query.AnnotatedAsset, sortID string) error {
+		var aid bc.AssetID
+		copy(aid[:], aa.ID)
+		assetsSaved = append(assetsSaved, aid)
 		return nil
 	})
 
