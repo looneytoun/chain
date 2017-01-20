@@ -13,6 +13,7 @@ type SpendInput struct {
 	// Commitment
 	Outpoint
 	OutputCommitment
+	OutputCommitmentSuffix []byte
 
 	// Witness
 	Arguments [][]byte
@@ -31,8 +32,7 @@ func (si *SpendInput) readCommitment(r io.Reader, txVersion, assetVersion uint64
 	if err != nil {
 		return errors.Wrap(err, "reading outpoint")
 	}
-	all := txVersion == 1
-	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+	si.OutputCommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		return si.OutputCommitment.readFrom(r, assetVersion)
 	})
 	return errors.Wrap(err, "reading output commitment")

@@ -144,27 +144,6 @@ type BlockHeader struct {
 	WitnessSuffix []byte
 }
 
-type BlockCommitment struct {
-	// TransactionsMerkleRoot is the root hash of the Merkle binary hash
-	// tree formed by the transaction witness hashes of all transactions
-	// included in the block.
-	TransactionsMerkleRoot Hash
-
-	// AssetsMerkleRoot is the root hash of the Merkle Patricia Tree of
-	// the set of unspent outputs with asset version 1 after applying
-	// the block.
-	AssetsMerkleRoot Hash
-
-	// ConsensusProgram is the predicate for validating the next block.
-	ConsensusProgram []byte
-}
-
-type BlockWitness struct {
-	// Witness is a vector of arguments to the previous block's
-	// ConsensusProgram for validating this block.
-	Witness [][]byte
-}
-
 // Time returns the time represented by the Timestamp in bh.
 func (bh *BlockHeader) Time() time.Time {
 	tsNano := bh.TimestampMS * uint64(time.Millisecond)
@@ -242,27 +221,13 @@ func (bh *BlockHeader) readFrom(r io.Reader) (uint8, error) {
 		return 0, err
 	}
 
-	_, err = blockchain.ReadExtensibleString(r, true, func(r io.Reader) error {
-		_, err := io.ReadFull(r, bh.TransactionsMerkleRoot[:])
-		if err != nil {
-			return err
-		}
-		_, err = io.ReadFull(r, bh.AssetsMerkleRoot[:])
-		if err != nil {
-			return err
-		}
-		bh.ConsensusProgram, _, err = blockchain.ReadVarstr31(r)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	bh.CommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, bh.BlockCommitment.readFrom)
 	if err != nil {
 		return 0, err
 	}
 
 	if serflags[0]&SerBlockWitness == SerBlockWitness {
-		_, err = blockchain.ReadExtensibleString(r, true, func(r io.Reader) (err error) {
+		bh.WitnessSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) (err error) {
 			bh.Witness, _, err = blockchain.ReadVarstrList(r)
 			return err
 		})
@@ -310,13 +275,13 @@ func (bh *BlockHeader) writeTo(w io.Writer, serflags uint8) error {
 		return err
 	}
 
-	bh.CommitmentSuffix, _, err = blockchain.WriteExtensibleString(w, bh.BlockCommitment.writeTo)
+	_, err = blockchain.WriteExtensibleString(w, bh.CommitmentSuffix, bh.BlockCommitment.writeTo)
 	if err != nil {
 		return err
 	}
 
 	if serflags&SerBlockWitness == SerBlockWitness {
-		_, err = blockchain.WriteExtensibleString(w, bh.BlockWitness.writeTo)
+		_, err = blockchain.WriteExtensibleString(w, bh.WitnessSuffix, bh.BlockWitness.writeTo)
 		if err != nil {
 			return err
 		}
