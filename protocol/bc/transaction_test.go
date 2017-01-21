@@ -5,12 +5,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
-	"reflect"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
 
 	"chain/errors"
+	"chain/testutil"
 )
 
 func TestTransaction(t *testing.T) {
@@ -179,7 +179,7 @@ func TestTransaction(t *testing.T) {
 		if err := json.Unmarshal(txJSON, &txFromJSON); err != nil {
 			t.Errorf("test %d: error unmarshaling tx from json: %s", i, err)
 		}
-		if !reflect.DeepEqual(test.tx, &txFromJSON) {
+		if !testutil.DeepEqual(test.tx, &txFromJSON) {
 			t.Errorf("test %d: Tx -> json -> Tx: got:\n%s\nwant:\n%s", i, spew.Sdump(&txFromJSON), spew.Sdump(test.tx))
 		}
 
@@ -187,7 +187,7 @@ func TestTransaction(t *testing.T) {
 		if err := tx1.UnmarshalText([]byte(test.hex)); err != nil {
 			t.Errorf("test %d: unexpected err %v", i, err)
 		}
-		if !reflect.DeepEqual(*tx1, test.tx.TxData) {
+		if !testutil.DeepEqual(*tx1, test.tx.TxData) {
 			t.Errorf("test %d: tx1 is:\n%swant:\n%s", i, spew.Sdump(*tx1), spew.Sdump(test.tx.TxData))
 		}
 	}

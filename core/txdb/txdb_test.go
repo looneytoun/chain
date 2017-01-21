@@ -2,7 +2,6 @@ package txdb
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"chain/database/pg/pgtest"
@@ -34,24 +33,28 @@ func TestGetBlock(t *testing.T) {
 			Version:           1,
 			Height:            1,
 			PreviousBlockHash: [32]byte{'1', '2', '3'},
-			TransactionsMerkleRoot: bc.Hash{
-				'A', 'B', 'C', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			TimestampMS:       100,
+			BlockCommitment: bc.BlockCommitment{
+				TransactionsMerkleRoot: bc.Hash{
+					'A', 'B', 'C', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				},
+				AssetsMerkleRoot: bc.Hash{
+					'X', 'Y', 'Z', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				},
+				ConsensusProgram: []byte("test-output-script"),
 			},
-			AssetsMerkleRoot: bc.Hash{
-				'X', 'Y', 'Z', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			BlockWitness: bc.BlockWitness{
+				Witness: [][]byte{[]byte("test-sig-script")},
 			},
-			TimestampMS:      100,
-			Witness:          [][]byte{[]byte("test-sig-script")},
-			ConsensusProgram: []byte("test-output-script"),
 		},
 		Transactions: []*bc.Tx{
 			bc.NewTx(bc.TxData{Version: 1, ReferenceData: []byte("test-tx")}),
 		},
 	}
 
-	if !reflect.DeepEqual(got, want) {
+	if !testutil.DeepEqual(got, want) {
 		t.Errorf("latest block:\ngot:  %+v\nwant: %+v", got, want)
 	}
 }
@@ -83,7 +86,7 @@ func TestInsertBlock(t *testing.T) {
 	if err != nil {
 		testutil.FatalErr(t, err)
 	}
-	if !reflect.DeepEqual(got, blk) {
+	if !testutil.DeepEqual(got, blk) {
 		t.Errorf("got %#v, wanted %#v", got, blk)
 	}
 }

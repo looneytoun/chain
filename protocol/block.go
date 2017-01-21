@@ -63,7 +63,9 @@ func (c *Chain) GenerateBlock(ctx context.Context, prev *bc.Block, snapshot *sta
 			Height:            prev.Height + 1,
 			PreviousBlockHash: prev.Hash(),
 			TimestampMS:       timestampMS,
-			ConsensusProgram:  prev.ConsensusProgram,
+			BlockCommitment: bc.BlockCommitment{
+				ConsensusProgram:  prev.ConsensusProgram,
+			},
 		},
 	}
 
@@ -224,8 +226,10 @@ func NewInitialBlock(pubkeys []ed25519.PublicKey, nSigs int, timestamp time.Time
 			Version:                bc.NewBlockVersion,
 			Height:                 1,
 			TimestampMS:            bc.Millis(timestamp),
-			ConsensusProgram:       script,
-			TransactionsMerkleRoot: root,
+			BlockCommitment: bc.BlockCommitment{
+				ConsensusProgram:       script,
+				TransactionsMerkleRoot: root,
+			},
 		},
 	}
 	return b, nil

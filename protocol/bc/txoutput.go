@@ -16,7 +16,9 @@ import (
 type TxOutput struct {
 	AssetVersion uint64
 	OutputCommitment
-	ReferenceData []byte
+	CommitmentSuffix []byte
+	ReferenceData    []byte
+	WitnessSuffix    []byte
 }
 
 func NewTxOutput(assetID AssetID, amount uint64, controlProgram, referenceData []byte) *TxOutput {
@@ -43,8 +45,7 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 		return fmt.Errorf("unrecognized asset version %d for transaction version %d", to.AssetVersion, txVersion)
 	}
 
-	all := txVersion == 1
-	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+	to.CommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		return to.readOutputCommitment(r)
 	})
 	if err != nil {
@@ -57,7 +58,7 @@ func (to *TxOutput) readFrom(r io.Reader, txVersion uint64) (err error) {
 	}
 
 	// TODO(bobg): test that serialization flags include SerWitness, when we relax the serflags-must-be-0x7 rule
-	_, err = blockchain.ReadExtensibleString(r, false, to.readWitness)
+	to.WitnessSuffix, _, err = blockchain.ReadExtensibleString(r, to.readWitness)
 	return err
 }
 
@@ -67,7 +68,7 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 		return errors.Wrap(err, "writing asset version")
 	}
 
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+	_, err = blockchain.WriteExtensibleString(w, to.CommitmentSuffix, func(w io.Writer) error {
 		return to.WriteOutputCommitment(w)
 	})
 	if err != nil {
@@ -80,7 +81,7 @@ func (to *TxOutput) writeTo(w io.Writer, serflags byte) error {
 	}
 
 	if serflags&SerWitness != 0 {
-		_, err = blockchain.WriteExtensibleString(w, to.writeWitness)
+		_, err = blockchain.WriteExtensibleString(w, to.WitnessSuffix, to.writeWitness)
 		if err != nil {
 			return err
 		}

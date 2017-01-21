@@ -17,6 +17,8 @@ type (
 		AssetVersion  uint64
 		ReferenceData []byte
 		TypedInput
+		CommitmentSuffix []byte
+		WitnessSuffix []byte
 	}
 
 	// TypedInput is the type-specific part of a transaction input.
@@ -33,7 +35,7 @@ func (t *TxInput) writeTo(w io.Writer, serflags uint8) error {
 	if err != nil {
 		return err
 	}
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+	_, err = blockchain.WriteExtensibleString(w, t.CommitmentSuffix, func(w io.Writer) error {
 		return t.WriteInputCommitment(w)
 	})
 	if err != nil {
@@ -44,7 +46,7 @@ func (t *TxInput) writeTo(w io.Writer, serflags uint8) error {
 		return err
 	}
 	if serflags&SerWitness != 0 {
-		_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+		_, err = blockchain.WriteExtensibleString(w, t.WitnessSuffix, func(w io.Writer) error {
 			return t.writeInputWitness(w)
 		})
 		if err != nil {
@@ -87,8 +89,8 @@ func (t *TxInput) WriteInputCommitment(w io.Writer) (err error) {
 				return err
 			}
 			// Nested extensible string
-			_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
-				return inp.OutputCommitment.writeTo(w, t.AssetVersion)
+			_, err = blockchain.WriteExtensibleString(w, inp.OutputCommitmentSuffix, func(w io.Writer) error {
+				return inp.writePrevoutCommitment(w, t.AssetVersion)
 			})
 			return err
 		}
@@ -126,8 +128,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 		ii      *IssuanceInput
 	)
 
-	all := txVersion == 1
-	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+	t.CommitmentSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		var icType [1]byte
 		_, err = io.ReadFull(r, icType[:])
 		if err != nil {
@@ -164,7 +165,7 @@ func (t *TxInput) readFrom(r io.Reader, txVersion uint64) (err error) {
 		return errors.Wrap(err, "reading input reference data")
 	}
 
-	_, err = blockchain.ReadExtensibleString(r, false, func(r io.Reader) error {
+	t.WitnessSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		// TODO(bobg): test that serialization flags include SerWitness, when we relax the serflags-must-be-0x7 rule
 		return t.TypedInput.readWitness(r, t.AssetVersion)
 	})

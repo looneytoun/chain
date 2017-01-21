@@ -101,6 +101,8 @@ type TxData struct {
 	Outputs       []*TxOutput
 	MinTime       uint64
 	MaxTime       uint64
+	CommonFieldsSuffix []byte
+	CommonWitnessSuffix []byte
 	ReferenceData []byte
 }
 
@@ -157,7 +159,7 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 		return err
 	}
 
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+	_, err = blockchain.WriteExtensibleString(w, tx.CommonFieldsSuffix, func(w io.Writer) error {
 		_, err := blockchain.WriteVarint63(w, tx.MinTime)
 		if err != nil {
 			return err
@@ -170,7 +172,7 @@ func (tx *TxData) writeTo(w io.Writer, serflags byte) error {
 	}
 
 	// common witness
-	_, err = blockchain.WriteExtensibleString(w, func(w io.Writer) error {
+	_, err = blockchain.WriteExtensibleString(w, tx.CommonWitnessSuffix, func(w io.Writer) error {
 		return tx.writeCommonWitness(w)
 	})
 	if err != nil {
@@ -223,8 +225,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	}
 
 	// Common fields
-	all := tx.Version == 1
-	_, err = blockchain.ReadExtensibleString(r, all, func(r io.Reader) error {
+	tx.CommonFieldsSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		tx.MinTime, _, err = blockchain.ReadVarint63(r)
 		if err != nil {
 			return errors.Wrap(err, "reading transaction mintime")
@@ -237,7 +238,7 @@ func (tx *TxData) readFrom(r io.Reader) error {
 	}
 
 	// Common witness
-	_, err = blockchain.ReadExtensibleString(r, false, func(r io.Reader) error {
+	tx.CommonWitnessSuffix, _, err = blockchain.ReadExtensibleString(r, func(r io.Reader) error {
 		return tx.readCommonWitness(r)
 	})
 	if err != nil {

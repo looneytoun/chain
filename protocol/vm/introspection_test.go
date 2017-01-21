@@ -1,16 +1,18 @@
 package vm
 
 import (
-	"reflect"
 	"testing"
 
 	"chain/protocol/bc"
+	"chain/testutil"
 )
 
 func TestNextProgram(t *testing.T) {
 	block := &bc.Block{
 		BlockHeader: bc.BlockHeader{
-			ConsensusProgram: []byte{0x1, 0x2, 0x3},
+			BlockCommitment: bc.BlockCommitment{
+				ConsensusProgram: []byte{0x1, 0x2, 0x3},
+			},
 		},
 	}
 	prog, err := Assemble("NEXTPROGRAM 0x010203 EQUAL")
@@ -105,7 +107,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedStack := [][]byte{zeroHash[:], []byte{}}
-	if !reflect.DeepEqual(vm.dataStack, expectedStack) {
+	if !testutil.DeepEqual(vm.dataStack, expectedStack) {
 		t.Errorf("expected stack %v, got %v", expectedStack, vm.dataStack)
 	}
 
@@ -141,7 +143,7 @@ func TestOutpointAndNonceOp(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedStack = [][]byte{nonce}
-	if !reflect.DeepEqual(vm.dataStack, expectedStack) {
+	if !testutil.DeepEqual(vm.dataStack, expectedStack) {
 		t.Errorf("expected stack %v, got %v", expectedStack, vm.dataStack)
 	}
 }
@@ -520,7 +522,7 @@ func TestIntrospectionOps(t *testing.T) {
 		c.wantVM.pc = 1
 		c.wantVM.nextPC = 1
 		c.wantVM.sigHasher = c.startVM.sigHasher
-		if !reflect.DeepEqual(vm, c.wantVM) {
+		if !testutil.DeepEqual(vm, c.wantVM) {
 			t.Errorf("case %d, op %s: unexpected vm result\n\tgot:  %+v\n\twant: %+v\n", i, ops[c.op].name, c.startVM, c.wantVM)
 		}
 	}
